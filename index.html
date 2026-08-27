@@ -1,0 +1,3361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Vehicle SOS Dashboard</title>
+
+    <style>* {
+    box-sizing: border-box;
+}
+
+:root {
+    --background: #f5f7fa;
+    --surface: #ffffff;
+    --border: #e4e7ec;
+
+    --text: #101828;
+    --muted: #667085;
+
+    --danger: #d92d20;
+    --danger-light: #fee4e2;
+
+    --warning: #b54708;
+    --warning-light: #fff1d6;
+
+    --success: #027a48;
+    --success-light: #dcfae6;
+
+    --primary: #155eef;
+    --primary-dark: #004eeb;
+}
+
+body {
+    margin: 0;
+
+    font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background: var(--background);
+
+    color: var(--text);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.topbar {
+
+    min-height: 82px;
+
+    padding: 16px 5%;
+
+    background: #101828;
+
+    color: white;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+}
+
+
+.brand {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+
+.brand-mark {
+
+    width: 48px;
+
+    height: 48px;
+
+    border-radius: 12px;
+
+    background: var(--danger);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+}
+
+
+.brand h1 {
+
+    margin: 0;
+
+    font-size: 21px;
+}
+
+
+.brand p {
+
+    margin: 4px 0 0;
+
+    color: #98a2b3;
+
+    font-size: 13px;
+}
+
+
+.connection-area {
+
+    display: flex;
+
+    gap: 25px;
+}
+
+
+.connection-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+}
+
+
+.connection-item small {
+
+    display: block;
+
+    color: #98a2b3;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+
+.connection-item strong {
+
+    display: block;
+
+    font-size: 12px;
+}
+
+
+.status-dot {
+
+    width: 10px;
+
+    height: 10px;
+
+    border-radius: 50%;
+
+    background: #98a2b3;
+}
+
+
+.status-dot.online {
+
+    background: #12b76a;
+}
+
+
+.status-dot.offline {
+
+    background: #f04438;
+}
+
+
+
+/* =========================================================
+   CONTAINER
+========================================================= */
+
+.container {
+
+    width: min(1500px, 94%);
+
+    margin: 25px auto;
+}
+
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.stats-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 16px;
+}
+
+
+.stat-card {
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    padding: 20px;
+
+    box-shadow:
+        0 2px 7px rgba(16, 24, 40, 0.04);
+}
+
+
+.stat-title {
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    color: var(--muted);
+
+    letter-spacing: 0.8px;
+}
+
+
+.stat-value {
+
+    font-size: 34px;
+
+    font-weight: 800;
+
+    margin-top: 8px;
+}
+
+
+.stat-description {
+
+    margin-top: 5px;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+.danger-card .stat-value {
+
+    color: var(--danger);
+}
+
+
+.warning-card .stat-value {
+
+    color: var(--warning);
+}
+
+
+.success-card .stat-value {
+
+    color: var(--success);
+}
+
+
+
+/* =========================================================
+   PANEL
+========================================================= */
+
+.panel {
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    margin-top: 18px;
+
+    padding: 20px;
+
+    box-shadow:
+        0 2px 7px rgba(16, 24, 40, 0.04);
+}
+
+
+.panel-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 15px;
+
+    margin-bottom: 18px;
+}
+
+
+.panel-header h2 {
+
+    margin: 0;
+
+    font-size: 17px;
+}
+
+
+.panel-header p {
+
+    margin: 5px 0 0;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+
+/* =========================================================
+   LIVE ALERT
+========================================================= */
+
+.live-alert {
+
+    border-left: 5px solid #98a2b3;
+}
+
+
+.live-alert.active {
+
+    border-left-color: var(--danger);
+
+    background: #fffafa;
+}
+
+
+.badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 7px 11px;
+
+    border-radius: 30px;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.5px;
+}
+
+
+.badge.neutral {
+
+    background: #f2f4f7;
+
+    color: #475467;
+}
+
+
+.badge.active {
+
+    background: var(--danger-light);
+
+    color: var(--danger);
+}
+
+
+.badge.cancelled {
+
+    background: var(--warning-light);
+
+    color: var(--warning);
+}
+
+
+.badge.resolved {
+
+    background: var(--success-light);
+
+    color: var(--success);
+}
+
+
+.empty-alert {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 16px;
+
+    border: 1px dashed var(--border);
+
+    border-radius: 10px;
+}
+
+
+.empty-icon {
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 10px;
+
+    background: #f2f4f7;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-weight: 800;
+
+    color: var(--muted);
+}
+
+
+.empty-alert p {
+
+    margin: 5px 0 0;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+
+/* =========================================================
+   TWO COLUMN
+========================================================= */
+
+.two-column {
+
+    display: grid;
+
+    grid-template-columns:
+        1.3fr 1fr;
+
+    gap: 18px;
+}
+
+
+.two-column .panel {
+
+    margin-top: 18px;
+}
+
+
+
+/* =========================================================
+   EVENT INFO
+========================================================= */
+
+.info-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 12px;
+}
+
+
+.info-item {
+
+    background: #f8fafc;
+
+    border: 1px solid #eaecf0;
+
+    border-radius: 10px;
+
+    padding: 12px;
+}
+
+
+.info-item span {
+
+    display: block;
+
+    font-size: 10px;
+
+    color: var(--muted);
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+}
+
+
+.info-item strong {
+
+    display: block;
+
+    margin-top: 5px;
+
+    font-size: 13px;
+
+    word-break: break-word;
+}
+
+
+
+/* =========================================================
+   LOCATION
+========================================================= */
+
+.location-box {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 12px;
+}
+
+
+.coordinate {
+
+    padding: 18px;
+
+    border-radius: 10px;
+
+    background: #f8fafc;
+
+    border: 1px solid #eaecf0;
+}
+
+
+.coordinate span {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 10px;
+
+    font-weight: 700;
+}
+
+
+.coordinate strong {
+
+    display: block;
+
+    margin-top: 8px;
+
+    font-size: 18px;
+}
+
+
+.gps-status,
+.location-source {
+
+    margin-top: 12px;
+
+    font-size: 12px;
+
+    color: var(--muted);
+}
+
+
+.gps-status strong,
+.location-source strong {
+
+    color: var(--text);
+}
+
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.primary-button,
+.secondary-button {
+
+    border: 0;
+
+    border-radius: 8px;
+
+    padding: 10px 14px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    text-decoration: none;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-top: 15px;
+}
+
+
+.primary-button {
+
+    background: var(--primary);
+
+    color: white;
+}
+
+
+.primary-button:hover {
+
+    background: var(--primary-dark);
+}
+
+
+.secondary-button {
+
+    background: #f2f4f7;
+
+    color: #344054;
+
+    border: 1px solid #d0d5dd;
+
+    margin-top: 0;
+}
+
+
+
+/* =========================================================
+   SENSOR
+========================================================= */
+
+.sensor-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 12px;
+}
+
+
+.sensor-card {
+
+    border: 1px solid var(--border);
+
+    background: #f8fafc;
+
+    border-radius: 10px;
+
+    padding: 15px;
+}
+
+
+.sensor-card.highlight {
+
+    border-color: #b2ddff;
+
+    background: #eff8ff;
+}
+
+
+.sensor-card span {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.5px;
+}
+
+
+.sensor-card strong {
+
+    display: block;
+
+    font-size: 23px;
+
+    margin-top: 7px;
+}
+
+
+.sensor-card small {
+
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.history-header {
+
+    align-items: flex-start;
+}
+
+
+.history-controls {
+
+    display: flex;
+
+    gap: 8px;
+
+    align-items: center;
+}
+
+
+.history-controls input,
+.history-controls select {
+
+    height: 38px;
+
+    border:
+
+        1px solid #d0d5dd;
+
+    border-radius: 8px;
+
+    background: white;
+
+    padding: 0 10px;
+
+    outline: none;
+}
+
+
+.history-controls input {
+
+    width: 200px;
+}
+
+
+.table-container {
+
+    overflow-x: auto;
+}
+
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    min-width: 1100px;
+}
+
+
+th {
+
+    text-align: left;
+
+    background: #f8fafc;
+
+    color: #667085;
+
+    font-size: 9px;
+
+    letter-spacing: 0.6px;
+
+    padding: 12px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+
+td {
+
+    padding: 13px 12px;
+
+    border-bottom: 1px solid #eaecf0;
+
+    font-size: 12px;
+
+    vertical-align: middle;
+}
+
+
+tbody tr:hover {
+
+    background: #fafafa;
+}
+
+
+.loading {
+
+    text-align: center;
+
+    padding: 35px;
+
+    color: var(--muted);
+}
+
+
+.event-link {
+
+    color: var(--primary);
+
+    text-decoration: none;
+
+    font-weight: 700;
+}
+
+
+.small-button {
+
+    border: 1px solid #d0d5dd;
+
+    background: white;
+
+    color: #344054;
+
+    border-radius: 6px;
+
+    padding: 6px 8px;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    margin: 2px;
+}
+
+
+.small-button:hover {
+
+    background: #f2f4f7;
+}
+
+
+.small-button.danger {
+
+    color: var(--danger);
+}
+
+
+.small-button.success {
+
+    color: var(--success);
+}
+
+
+
+/* =========================================================
+   FORMS
+========================================================= */
+
+.form-group {
+
+    margin-bottom: 15px;
+}
+
+
+.form-group label {
+
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+.form-group input {
+
+    width: 100%;
+
+    height: 42px;
+
+    border: 1px solid #d0d5dd;
+
+    border-radius: 8px;
+
+    padding: 0 12px;
+
+    outline: none;
+
+    font-size: 13px;
+}
+
+
+.form-group input:focus {
+
+    border-color: var(--primary);
+
+    box-shadow:
+        0 0 0 3px #dbeafe;
+}
+
+
+.form-group small {
+
+    display: block;
+
+    margin-top: 5px;
+
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+
+.form-message {
+
+    margin-top: 10px;
+
+    color: var(--success);
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+footer {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    margin: 25px 0;
+
+    padding: 15px 0;
+
+    border-top: 1px solid var(--border);
+
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+    .stats-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    .sensor-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 800px) {
+
+    .topbar {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+
+    .connection-area {
+
+        width: 100%;
+
+        justify-content: space-between;
+    }
+
+
+    .two-column {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .history-header {
+
+        flex-direction: column;
+    }
+
+
+    .history-controls {
+
+        width: 100%;
+
+        flex-wrap: wrap;
+    }
+
+
+    .history-controls input {
+
+        width: 100%;
+    }
+
+}
+
+
+@media (max-width: 550px) {
+
+    .container {
+
+        width: 94%;
+    }
+
+
+    .stats-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .sensor-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .info-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .location-box {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    footer {
+
+        flex-direction: column;
+
+        gap: 8px;
+    }
+
+}</style>
+</head>
+
+<body>
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header class="topbar">
+
+        <div class="brand">
+            <div class="brand-mark">SOS</div>
+
+            <div>
+                <h1>Smart Vehicle SOS</h1>
+                <p>Emergency Monitoring Dashboard</p>
+            </div>
+        </div>
+
+        <div class="connection-area">
+
+            <div class="connection-item">
+                <span class="status-dot" id="serverDot"></span>
+
+                <div>
+                    <small>SERVER</small>
+                    <strong id="serverStatus">Checking...</strong>
+                </div>
+            </div>
+
+            <div class="connection-item">
+                <span class="status-dot" id="liveDot"></span>
+
+                <div>
+                    <small>LIVE DATA</small>
+                    <strong id="liveStatus">Waiting...</strong>
+                </div>
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
+    <main class="container">
+
+
+        <!-- =================================================
+             SUMMARY CARDS
+        ================================================== -->
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <div class="stat-title">TOTAL EVENTS</div>
+                <div class="stat-value" id="totalEvents">0</div>
+                <div class="stat-description">
+                    All recorded SOS events
+                </div>
+            </div>
+
+
+            <div class="stat-card danger-card">
+                <div class="stat-title">ACTIVE ALERTS</div>
+                <div class="stat-value" id="activeEvents">0</div>
+                <div class="stat-description">
+                    Emergency alerts requiring attention
+                </div>
+            </div>
+
+
+            <div class="stat-card warning-card">
+                <div class="stat-title">CANCELLED</div>
+                <div class="stat-value" id="cancelledEvents">0</div>
+                <div class="stat-description">
+                    False SOS / cancelled events
+                </div>
+            </div>
+
+
+            <div class="stat-card success-card">
+                <div class="stat-title">RESOLVED</div>
+                <div class="stat-value" id="resolvedEvents">0</div>
+                <div class="stat-description">
+                    Completed emergency events
+                </div>
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             LIVE ALERT
+        ================================================== -->
+
+        <section class="panel live-alert" id="liveAlertPanel">
+
+            <div class="panel-header">
+
+                <div>
+                    <h2>Live Emergency Alert</h2>
+
+                    <p id="liveAlertDescription">
+                        No active emergency detected.
+                    </p>
+                </div>
+
+                <div id="liveAlertBadge" class="badge neutral">
+                    SYSTEM SAFE
+                </div>
+
+            </div>
+
+
+            <div id="liveAlertContent" class="empty-alert">
+
+                <div class="empty-icon">
+                    !
+                </div>
+
+                <div>
+                    <strong>No Active SOS</strong>
+
+                    <p>
+                        The system is monitoring the vehicle.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             EVENT INFORMATION
+        ================================================== -->
+
+        <section class="two-column">
+
+
+            <!-- EVENT DETAILS -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+                    <div>
+                        <h2>Event Information</h2>
+                        <p>Latest received SOS information</p>
+                    </div>
+                </div>
+
+
+                <div class="info-grid">
+
+                    <div class="info-item">
+                        <span>Event ID</span>
+                        <strong id="eventId">---</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Vehicle ID</span>
+                        <strong id="vehicleId">---</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Driver</span>
+                        <strong id="driver">---</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Alert Type</span>
+                        <strong id="alertType">---</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Date / Time</span>
+                        <strong id="eventTime">---</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Event Status</span>
+                        <strong id="eventStatus">---</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Wi-Fi Status</span>
+                        <strong id="wifiStatus">---</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>WhatsApp Status</span>
+                        <strong id="whatsappStatus">---</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- LOCATION -->
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h2>Vehicle Location</h2>
+                        <p>Latest available coordinates</p>
+                    </div>
+
+                </div>
+
+
+                <div class="location-box">
+
+                    <div class="coordinate">
+                        <span>LATITUDE</span>
+                        <strong id="latitude">---</strong>
+                    </div>
+
+                    <div class="coordinate">
+                        <span>LONGITUDE</span>
+                        <strong id="longitude">---</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="gps-status">
+                    GPS:
+                    <strong id="gpsStatus">---</strong>
+                </div>
+
+
+                <div class="location-source">
+                    Location Source:
+                    <strong id="locationSource">---</strong>
+                </div>
+
+
+                <a
+                    id="mapButton"
+                    class="primary-button"
+                    href="#"
+                    target="_blank"
+                >
+                    Open Location in Google Maps
+                </a>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             SENSOR DATA
+        ================================================== -->
+
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div>
+                    <h2>Sensor Data</h2>
+                    <p>MPU6050 acceleration and gyroscope values</p>
+                </div>
+
+                <div id="sensorSourceBadge" class="badge neutral">
+                    UNKNOWN
+                </div>
+
+            </div>
+
+
+            <div class="sensor-grid">
+
+
+                <div class="sensor-card">
+
+                    <span>ACCELERATION X</span>
+
+                    <strong id="accX">
+                        0.00
+                    </strong>
+
+                    <small>
+                        m/s²
+                    </small>
+
+                </div>
+
+
+                <div class="sensor-card">
+
+                    <span>ACCELERATION Y</span>
+
+                    <strong id="accY">
+                        0.00
+                    </strong>
+
+                    <small>
+                        m/s²
+                    </small>
+
+                </div>
+
+
+                <div class="sensor-card">
+
+                    <span>ACCELERATION Z</span>
+
+                    <strong id="accZ">
+                        0.00
+                    </strong>
+
+                    <small>
+                        m/s²
+                    </small>
+
+                </div>
+
+
+                <div class="sensor-card highlight">
+
+                    <span>ACCELERATION MAGNITUDE</span>
+
+                    <strong id="accMagnitude">
+                        0.00
+                    </strong>
+
+                    <small>
+                        m/s²
+                    </small>
+
+                </div>
+
+
+                <div class="sensor-card">
+
+                    <span>GYROSCOPE X</span>
+
+                    <strong id="gyroX">
+                        0.00
+                    </strong>
+
+                    <small>
+                        rad/s
+                    </small>
+
+                </div>
+
+
+                <div class="sensor-card">
+
+                    <span>GYROSCOPE Y</span>
+
+                    <strong id="gyroY">
+                        0.00
+                    </strong>
+
+                    <small>
+                        rad/s
+                    </small>
+
+                </div>
+
+
+                <div class="sensor-card">
+
+                    <span>GYROSCOPE Z</span>
+
+                    <strong id="gyroZ">
+                        0.00
+                    </strong>
+
+                    <small>
+                        rad/s
+                    </small>
+
+                </div>
+
+
+                <div class="sensor-card">
+
+                    <span>TILT</span>
+
+                    <strong id="tilt">
+                        0.00
+                    </strong>
+
+                    <small>
+                        degrees
+                    </small>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             EVENT HISTORY
+        ================================================== -->
+
+        <section class="panel">
+
+            <div class="panel-header history-header">
+
+                <div>
+                    <h2>SOS Event History</h2>
+
+                    <p>
+                        Every SOS alert received from the vehicle
+                    </p>
+                </div>
+
+
+                <div class="history-controls">
+
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search events..."
+                    >
+
+                    <select id="statusFilter">
+
+                        <option value="ALL">
+                            All Status
+                        </option>
+
+                        <option value="ACTIVE">
+                            Active
+                        </option>
+
+                        <option value="CANCELLED">
+                            Cancelled
+                        </option>
+
+                        <option value="RESOLVED">
+                            Resolved
+                        </option>
+
+                    </select>
+
+
+                    <button
+                        id="refreshButton"
+                        class="secondary-button"
+                    >
+                        Refresh
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>EVENT ID</th>
+
+                            <th>VEHICLE</th>
+
+                            <th>DRIVER</th>
+
+                            <th>ALERT TYPE</th>
+
+                            <th>ACCELERATION</th>
+
+                            <th>LOCATION</th>
+
+                            <th>TIME</th>
+
+                            <th>STATUS</th>
+
+                            <th>ACTIONS</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="eventTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="9"
+                                class="loading"
+                            >
+                                Loading events...
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             SETTINGS
+        ================================================== -->
+
+        <section class="two-column">
+
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h2>Vehicle Settings</h2>
+                        <p>Configure vehicle information</p>
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Vehicle ID
+                    </label>
+
+                    <input
+                        type="text"
+                        id="settingsVehicle"
+                        placeholder="VEHICLE-001"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Driver
+                    </label>
+
+                    <input
+                        type="text"
+                        id="settingsDriver"
+                        placeholder="Driver-01"
+                    >
+
+                </div>
+
+
+                <button
+                    class="primary-button"
+                    id="saveSettingsButton"
+                >
+                    Save Vehicle Settings
+                </button>
+
+
+                <div
+                    class="form-message"
+                    id="settingsMessage"
+                ></div>
+
+            </div>
+
+
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h2>WhatsApp Configuration</h2>
+
+                        <p>
+                            Number used for SOS messaging
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        WhatsApp Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="settingsPhone"
+                        placeholder="919876543210"
+                    >
+
+                    <small>
+                        Enter country code without + or spaces.
+                    </small>
+
+                </div>
+
+
+                <button
+                    class="primary-button"
+                    id="saveWhatsAppButton"
+                >
+                    Save WhatsApp Settings
+                </button>
+
+
+                <div
+                    class="form-message"
+                    id="whatsappMessage"
+                ></div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             FOOTER
+        ================================================== -->
+
+        <footer>
+
+            <div>
+                Smart Vehicle SOS System
+            </div>
+
+            <div>
+                Last dashboard update:
+                <strong id="lastUpdate">
+                    ---
+                </strong>
+            </div>
+
+        </footer>
+
+    </main>
+
+
+    <script>
+        /* ============================================================
+   SMART VEHICLE SOS DASHBOARD
+   FRONTEND JAVASCRIPT
+============================================================ */
+
+
+/* ============================================================
+   GLOBAL DATA
+============================================================ */
+
+let events = [];
+
+let latestEvent = null;
+
+let lastKnownEventId = null;
+
+
+/* ============================================================
+   API HELPER
+============================================================ */
+
+async function apiRequest(
+    url,
+    options = {}
+) {
+
+    const response = await fetch(
+        url,
+        options
+    );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            `HTTP ${response.status}`
+        );
+
+    }
+
+
+    return await response.json();
+}
+
+
+
+/* ============================================================
+   SERVER HEALTH
+============================================================ */
+
+async function checkServer() {
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/api/health"
+            );
+
+
+        document
+            .getElementById("serverStatus")
+            .textContent = "ONLINE";
+
+
+        document
+            .getElementById("serverDot")
+            .className =
+                "status-dot online";
+
+
+        document
+            .getElementById("liveStatus")
+            .textContent =
+                "CONNECTED";
+
+
+        document
+            .getElementById("liveDot")
+            .className =
+                "status-dot online";
+
+
+    }
+
+    catch (error) {
+
+        document
+            .getElementById("serverStatus")
+            .textContent =
+                "OFFLINE";
+
+
+        document
+            .getElementById("serverDot")
+            .className =
+                "status-dot offline";
+
+
+        document
+            .getElementById("liveStatus")
+            .textContent =
+                "NO DATA";
+
+
+        document
+            .getElementById("liveDot")
+            .className =
+                "status-dot offline";
+
+    }
+
+}
+
+
+
+/* ============================================================
+   LOAD EVENTS
+============================================================ */
+
+async function loadEvents() {
+
+    try {
+
+        const response =
+            await apiRequest(
+                "/api/events"
+            );
+
+
+        events =
+            response.events || [];
+
+
+        updateStatistics();
+
+
+        renderEventTable();
+
+
+        if (events.length > 0) {
+
+            latestEvent =
+                events[0];
+
+
+            showLatestEvent(
+                latestEvent
+            );
+
+
+            detectNewEvent(
+                latestEvent
+            );
+
+        }
+
+
+        document
+            .getElementById("lastUpdate")
+            .textContent =
+                new Date()
+                    .toLocaleTimeString();
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to load events:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* ============================================================
+   STATISTICS
+============================================================ */
+
+function updateStatistics() {
+
+    const total =
+        events.length;
+
+
+    const active =
+        events.filter(
+            event =>
+                event.eventStatus === "ACTIVE"
+        ).length;
+
+
+    const cancelled =
+        events.filter(
+            event =>
+                event.eventStatus === "CANCELLED"
+        ).length;
+
+
+    const resolved =
+        events.filter(
+            event =>
+                event.eventStatus === "RESOLVED"
+        ).length;
+
+
+    document
+        .getElementById("totalEvents")
+        .textContent =
+            total;
+
+
+    document
+        .getElementById("activeEvents")
+        .textContent =
+            active;
+
+
+    document
+        .getElementById("cancelledEvents")
+        .textContent =
+            cancelled;
+
+
+    document
+        .getElementById("resolvedEvents")
+        .textContent =
+            resolved;
+
+}
+
+
+
+/* ============================================================
+   SHOW LATEST EVENT
+============================================================ */
+
+function showLatestEvent(event) {
+
+    document
+        .getElementById("eventId")
+        .textContent =
+            event.eventId || "---";
+
+
+    document
+        .getElementById("vehicleId")
+        .textContent =
+            event.vehicleId || "---";
+
+
+    document
+        .getElementById("driver")
+        .textContent =
+            event.driver || "---";
+
+
+    document
+        .getElementById("alertType")
+        .textContent =
+            event.alertType || "---";
+
+
+    document
+        .getElementById("eventTime")
+        .textContent =
+            event.dateTime || "---";
+
+
+    document
+        .getElementById("eventStatus")
+        .textContent =
+            event.eventStatus || "---";
+
+
+    document
+        .getElementById("wifiStatus")
+        .textContent =
+            event.wifiStatus || "---";
+
+
+    document
+        .getElementById("whatsappStatus")
+        .textContent =
+            event.whatsappStatus || "---";
+
+
+    /* ========================================================
+       LOCATION
+    ======================================================== */
+
+    const latitude =
+        Number(
+            event.latitude
+        );
+
+
+    const longitude =
+        Number(
+            event.longitude
+        );
+
+
+    document
+        .getElementById("latitude")
+        .textContent =
+            Number.isFinite(latitude)
+                ? latitude.toFixed(6)
+                : "---";
+
+
+    document
+        .getElementById("longitude")
+        .textContent =
+            Number.isFinite(longitude)
+                ? longitude.toFixed(6)
+                : "---";
+
+
+    document
+        .getElementById("gpsStatus")
+        .textContent =
+            event.gpsDetected
+                ? "DETECTED"
+                : "NOT DETECTED";
+
+
+    document
+        .getElementById("locationSource")
+        .textContent =
+            event.locationSource || "---";
+
+
+    const mapButton =
+        document.getElementById(
+            "mapButton"
+        );
+
+
+    if (
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude)
+    ) {
+
+        mapButton.href =
+            `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+    }
+
+    else {
+
+        mapButton.href = "#";
+
+    }
+
+
+
+    /* ========================================================
+       SENSOR DATA
+    ======================================================== */
+
+    setNumber(
+        "accX",
+        event.accelerationX
+    );
+
+
+    setNumber(
+        "accY",
+        event.accelerationY
+    );
+
+
+    setNumber(
+        "accZ",
+        event.accelerationZ
+    );
+
+
+    setNumber(
+        "accMagnitude",
+        event.accelerationMagnitude
+    );
+
+
+    setNumber(
+        "gyroX",
+        event.gyroX
+    );
+
+
+    setNumber(
+        "gyroY",
+        event.gyroY
+    );
+
+
+    setNumber(
+        "gyroZ",
+        event.gyroZ
+    );
+
+
+    setNumber(
+        "tilt",
+        event.tilt
+    );
+
+
+    document
+        .getElementById(
+            "sensorSourceBadge"
+        )
+        .textContent =
+            event.sensorSource ||
+            "UNKNOWN";
+
+
+
+    /* ========================================================
+       LIVE ALERT
+    ======================================================== */
+
+    const panel =
+        document.getElementById(
+            "liveAlertPanel"
+        );
+
+
+    const badge =
+        document.getElementById(
+            "liveAlertBadge"
+        );
+
+
+    const description =
+        document.getElementById(
+            "liveAlertDescription"
+        );
+
+
+    if (
+        event.eventStatus ===
+        "ACTIVE"
+    ) {
+
+        panel.classList.add(
+            "active"
+        );
+
+
+        badge.className =
+            "badge active";
+
+
+        badge.textContent =
+            "ACTIVE SOS";
+
+
+        description.textContent =
+            `${event.alertType || "SOS"} detected from ${event.vehicleId || "vehicle"}`;
+
+
+        renderActiveAlert(
+            event
+        );
+
+    }
+
+    else {
+
+        panel.classList.remove(
+            "active"
+        );
+
+
+        if (
+            event.eventStatus ===
+            "CANCELLED"
+        ) {
+
+            badge.className =
+                "badge cancelled";
+
+
+            badge.textContent =
+                "CANCELLED";
+
+        }
+
+        else if (
+            event.eventStatus ===
+            "RESOLVED"
+        ) {
+
+            badge.className =
+                "badge resolved";
+
+
+            badge.textContent =
+                "RESOLVED";
+
+        }
+
+        else {
+
+            badge.className =
+                "badge neutral";
+
+
+            badge.textContent =
+                "SYSTEM SAFE";
+
+        }
+
+
+        description.textContent =
+            `Latest event: ${event.eventId || "---"}`;
+
+
+        renderNormalAlert(
+            event
+        );
+
+    }
+
+}
+
+
+
+/* ============================================================
+   NUMBER FORMAT
+============================================================ */
+
+function setNumber(
+    elementId,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    const number =
+        Number(value);
+
+
+    if (
+        Number.isFinite(number)
+    ) {
+
+        element.textContent =
+            number.toFixed(2);
+
+    }
+
+    else {
+
+        element.textContent =
+            "0.00";
+
+    }
+
+}
+
+
+
+/* ============================================================
+   ACTIVE ALERT UI
+============================================================ */
+
+function renderActiveAlert(event) {
+
+    const container =
+        document.getElementById(
+            "liveAlertContent"
+        );
+
+
+    container.className =
+        "empty-alert";
+
+
+    container.innerHTML = `
+
+        <div class="empty-icon">
+            !
+        </div>
+
+        <div>
+
+            <strong>
+                ${escapeHTML(
+                    event.alertType ||
+                    "SOS ALERT"
+                )}
+            </strong>
+
+            <p>
+                Event
+                <strong>
+                    ${escapeHTML(
+                        event.eventId ||
+                        "---"
+                    )}
+                </strong>
+
+                from vehicle
+
+                <strong>
+                    ${escapeHTML(
+                        event.vehicleId ||
+                        "---"
+                    )}
+                </strong>
+
+                at
+
+                ${escapeHTML(
+                    event.dateTime ||
+                    "---"
+                )}
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
+
+/* ============================================================
+   NORMAL ALERT UI
+============================================================ */
+
+function renderNormalAlert(event) {
+
+    const container =
+        document.getElementById(
+            "liveAlertContent"
+        );
+
+
+    container.className =
+        "empty-alert";
+
+
+    container.innerHTML = `
+
+        <div class="empty-icon">
+            !
+        </div>
+
+        <div>
+
+            <strong>
+                No Active SOS
+            </strong>
+
+            <p>
+                Latest event:
+                ${escapeHTML(
+                    event.eventId ||
+                    "---"
+                )}
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
+
+/* ============================================================
+   EVENT TABLE
+============================================================ */
+
+function renderEventTable() {
+
+    const tbody =
+        document.getElementById(
+            "eventTableBody"
+        );
+
+
+    const search =
+        document
+            .getElementById(
+                "searchInput"
+            )
+            .value
+            .toLowerCase();
+
+
+    const status =
+        document
+            .getElementById(
+                "statusFilter"
+            )
+            .value;
+
+
+    const filtered =
+        events.filter(
+            event => {
+
+                const text =
+                    JSON.stringify(
+                        event
+                    )
+                    .toLowerCase();
+
+
+                const searchMatch =
+                    text.includes(
+                        search
+                    );
+
+
+                const statusMatch =
+                    status === "ALL" ||
+                    event.eventStatus ===
+                        status;
+
+
+                return (
+                    searchMatch &&
+                    statusMatch
+                );
+
+            }
+        );
+
+
+    if (
+        filtered.length === 0
+    ) {
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="9"
+                    class="loading"
+                >
+                    No SOS events found.
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    tbody.innerHTML =
+        filtered
+            .map(
+                event =>
+                    createEventRow(
+                        event
+                    )
+            )
+            .join("");
+
+}
+
+
+
+/* ============================================================
+   CREATE TABLE ROW
+============================================================ */
+
+function createEventRow(event) {
+
+    const latitude =
+        Number(event.latitude);
+
+
+    const longitude =
+        Number(event.longitude);
+
+
+    let mapURL = "#";
+
+
+    if (
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude)
+    ) {
+
+        mapURL =
+            `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+    }
+
+
+    const acceleration =
+        Number(
+            event.accelerationMagnitude
+        );
+
+
+    const accelerationText =
+        Number.isFinite(
+            acceleration
+        )
+            ? acceleration.toFixed(2)
+            : "0.00";
+
+
+    return `
+
+        <tr>
+
+            <td>
+
+                <span class="event-link">
+
+                    ${escapeHTML(
+                        event.eventId ||
+                        "---"
+                    )}
+
+                </span>
+
+            </td>
+
+
+            <td>
+
+                ${escapeHTML(
+                    event.vehicleId ||
+                    "---"
+                )}
+
+            </td>
+
+
+            <td>
+
+                ${escapeHTML(
+                    event.driver ||
+                    "---"
+                )}
+
+            </td>
+
+
+            <td>
+
+                ${escapeHTML(
+                    event.alertType ||
+                    "---"
+                )}
+
+            </td>
+
+
+            <td>
+
+                <strong>
+                    ${accelerationText}
+                </strong>
+
+                m/s²
+
+            </td>
+
+
+            <td>
+
+                <a
+                    href="${mapURL}"
+                    target="_blank"
+                    class="event-link"
+                >
+
+                    ${
+                        Number.isFinite(
+                            latitude
+                        )
+                            ? latitude.toFixed(4)
+                            : "---"
+                    },
+
+                    ${
+                        Number.isFinite(
+                            longitude
+                        )
+                            ? longitude.toFixed(4)
+                            : "---"
+                    }
+
+                </a>
+
+            </td>
+
+
+            <td>
+
+                ${escapeHTML(
+                    event.dateTime ||
+                    "---"
+                )}
+
+            </td>
+
+
+            <td>
+
+                ${createStatusBadge(
+                    event.eventStatus
+                )}
+
+            </td>
+
+
+            <td>
+
+                <button
+                    class="small-button"
+                    onclick="openWhatsApp(
+                        '${escapeAttribute(
+                            event.eventId
+                        )}'
+                    )"
+                >
+                    WhatsApp
+                </button>
+
+
+                ${
+                    event.eventStatus ===
+                    "ACTIVE"
+
+                        ? `
+
+                            <button
+                                class="small-button success"
+                                onclick="resolveEvent(
+                                    '${escapeAttribute(
+                                        event.eventId
+                                    )}'
+                                )"
+                            >
+                                Resolve
+                            </button>
+
+                            <button
+                                class="small-button danger"
+                                onclick="cancelEvent(
+                                    '${escapeAttribute(
+                                        event.eventId
+                                    )}'
+                                )"
+                            >
+                                Cancel
+                            </button>
+
+                          `
+
+                        : ""
+                }
+
+            </td>
+
+        </tr>
+
+    `;
+
+}
+
+
+
+/* ============================================================
+   STATUS BADGE
+============================================================ */
+
+function createStatusBadge(
+    status
+) {
+
+    const value =
+        status || "UNKNOWN";
+
+
+    let className =
+        "neutral";
+
+
+    if (
+        value === "ACTIVE"
+    ) {
+
+        className =
+            "active";
+
+    }
+
+    else if (
+        value === "CANCELLED"
+    ) {
+
+        className =
+            "cancelled";
+
+    }
+
+    else if (
+        value === "RESOLVED"
+    ) {
+
+        className =
+            "resolved";
+
+    }
+
+
+    return `
+
+        <span class="badge ${className}">
+
+            ${escapeHTML(
+                value
+            )}
+
+        </span>
+
+    `;
+
+}
+
+
+
+/* ============================================================
+   CANCEL EVENT
+============================================================ */
+
+async function cancelEvent(
+    eventId
+) {
+
+    const confirmed =
+        confirm(
+            "Cancel this SOS event?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await apiRequest(
+            `/api/events/${encodeURIComponent(
+                eventId
+            )}/cancel`,
+            {
+                method: "PATCH"
+            }
+        );
+
+
+        await loadEvents();
+
+    }
+
+    catch (error) {
+
+        alert(
+            "Failed to cancel event."
+        );
+
+        console.error(error);
+
+    }
+
+}
+
+
+
+/* ============================================================
+   RESOLVE EVENT
+============================================================ */
+
+async function resolveEvent(
+    eventId
+) {
+
+    const confirmed =
+        confirm(
+            "Mark this SOS event as resolved?"
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await apiRequest(
+            `/api/events/${encodeURIComponent(
+                eventId
+            )}/resolve`,
+            {
+                method: "PATCH"
+            }
+        );
+
+
+        await loadEvents();
+
+    }
+
+    catch (error) {
+
+        alert(
+            "Failed to resolve event."
+        );
+
+        console.error(error);
+
+    }
+
+}
+
+
+
+/* ============================================================
+   WHATSAPP
+============================================================ */
+
+async function openWhatsApp(
+    eventId
+) {
+
+    try {
+
+        const result =
+            await apiRequest(
+                `/api/whatsapp/${encodeURIComponent(
+                    eventId
+                )}`
+            );
+
+
+        if (
+            result.url
+        ) {
+
+            window.open(
+                result.url,
+                "_blank"
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        alert(
+            "Unable to create WhatsApp message."
+        );
+
+        console.error(error);
+
+    }
+
+}
+
+
+
+/* ============================================================
+   LOAD SETTINGS
+============================================================ */
+
+async function loadSettings() {
+
+    try {
+
+        const settings =
+            await apiRequest(
+                "/api/settings"
+            );
+
+
+        document
+            .getElementById(
+                "settingsVehicle"
+            )
+            .value =
+                settings.vehicleId ||
+                "";
+
+
+        document
+            .getElementById(
+                "settingsDriver"
+            )
+            .value =
+                settings.driver ||
+                "";
+
+
+        document
+            .getElementById(
+                "settingsPhone"
+            )
+            .value =
+                settings.whatsappPhone ||
+                "";
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Settings error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* ============================================================
+   SAVE VEHICLE SETTINGS
+============================================================ */
+
+async function saveVehicleSettings() {
+
+    const vehicle =
+        document
+            .getElementById(
+                "settingsVehicle"
+            )
+            .value
+            .trim();
+
+
+    const driver =
+        document
+            .getElementById(
+                "settingsDriver"
+            )
+            .value
+            .trim();
+
+
+    try {
+
+        await apiRequest(
+            "/api/settings",
+            {
+
+                method: "PUT",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    vehicleId:
+                        vehicle,
+
+                    driver:
+                        driver
+
+                })
+
+            }
+        );
+
+
+        document
+            .getElementById(
+                "settingsMessage"
+            )
+            .textContent =
+                "Vehicle settings saved.";
+
+    }
+
+    catch (error) {
+
+        document
+            .getElementById(
+                "settingsMessage"
+            )
+            .textContent =
+                "Failed to save settings.";
+
+    }
+
+}
+
+
+
+/* ============================================================
+   SAVE WHATSAPP SETTINGS
+============================================================ */
+
+async function saveWhatsAppSettings() {
+
+    const phone =
+        document
+            .getElementById(
+                "settingsPhone"
+            )
+            .value
+            .trim();
+
+
+    try {
+
+        await apiRequest(
+            "/api/settings",
+            {
+
+                method: "PUT",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    whatsappPhone:
+                        phone
+
+                })
+
+            }
+        );
+
+
+        document
+            .getElementById(
+                "whatsappMessage"
+            )
+            .textContent =
+                "WhatsApp settings saved.";
+
+    }
+
+    catch (error) {
+
+        document
+            .getElementById(
+                "whatsappMessage"
+            )
+            .textContent =
+                "Failed to save WhatsApp settings.";
+
+    }
+
+}
+
+
+
+/* ============================================================
+   NEW EVENT DETECTION
+============================================================ */
+
+function detectNewEvent(
+    event
+) {
+
+    if (
+        lastKnownEventId === null
+    ) {
+
+        lastKnownEventId =
+            event.eventId;
+
+        return;
+
+    }
+
+
+    if (
+        event.eventId !==
+        lastKnownEventId
+    ) {
+
+        lastKnownEventId =
+            event.eventId;
+
+
+        if (
+            "Notification" in window
+        ) {
+
+            if (
+                Notification.permission ===
+                "granted"
+            ) {
+
+                new Notification(
+                    "New Vehicle SOS Alert",
+                    {
+                        body:
+                            `${event.alertType} - ${event.vehicleId}`
+                    }
+                );
+
+            }
+
+        }
+
+    }
+
+}
+
+
+
+/* ============================================================
+   HTML SAFETY
+============================================================ */
+
+function escapeHTML(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+function escapeAttribute(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        );
+
+}
+
+
+
+/* ============================================================
+   EVENT LISTENERS
+============================================================ */
+
+document
+    .getElementById(
+        "refreshButton"
+    )
+    .addEventListener(
+        "click",
+        loadEvents
+    );
+
+
+document
+    .getElementById(
+        "searchInput"
+    )
+    .addEventListener(
+        "input",
+        renderEventTable
+    );
+
+
+document
+    .getElementById(
+        "statusFilter"
+    )
+    .addEventListener(
+        "change",
+        renderEventTable
+    );
+
+
+document
+    .getElementById(
+        "saveSettingsButton"
+    )
+    .addEventListener(
+        "click",
+        saveVehicleSettings
+    );
+
+
+document
+    .getElementById(
+        "saveWhatsAppButton"
+    )
+    .addEventListener(
+        "click",
+        saveWhatsAppSettings
+    );
+
+
+
+/* ============================================================
+   START DASHBOARD
+============================================================ */
+
+async function startDashboard() {
+
+    await checkServer();
+
+    await loadSettings();
+
+    await loadEvents();
+
+}
+
+
+/* ============================================================
+   AUTO REFRESH
+============================================================ */
+
+/*
+    Every 3 seconds the dashboard checks the backend.
+
+    ESP8266
+       ↓
+    POST /api/sos
+       ↓
+    FastAPI
+       ↓
+    /api/events
+       ↓
+    THIS JAVASCRIPT
+       ↓
+    Dashboard updates
+*/
+
+setInterval(
+    async () => {
+
+        await checkServer();
+
+        await loadEvents();
+
+    },
+    3000
+);
+
+
+/* ============================================================
+   RUN
+============================================================ */
+
+startDashboard();
+
+    </script>
+
+</body>
+</html>
