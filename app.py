@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 
@@ -7,6 +7,7 @@ from datetime import datetime
 from openpyxl import Workbook, load_workbook
 
 import json
+import math
 import urllib.parse
 
 
@@ -16,7 +17,8 @@ import urllib.parse
 
 app = FastAPI(
     title="Smart Vehicle SOS System",
-    version="2.0.0"
+    version="3.0.0",
+    description="Smart Vehicle SOS monitoring backend for ESP8266/NodeMCU"
 )
 
 
@@ -42,6 +44,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
 DATA_DIR.mkdir(
+    parents=True,
     exist_ok=True
 )
 
@@ -71,6 +74,136 @@ FALLBACK_LONGITUDE = 78.485000
 
 
 # ============================================================
+# DEFAULT SETTINGS
+# ============================================================
+
+DEFAULT_SETTINGS = {
+    "vehicleId": "VEHICLE-001",
+    "driver": "Driver-01",
+    "whatsappPhone": ""
+}
+
+
+# ============================================================
+# UTILITY FUNCTIONS
+# ============================================================
+
+def now_string():
+    """
+    Return current server time.
+    """
+
+    return datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+
+def safe_float(value, default=0.0):
+    """
+    Convert a value to float safely.
+    """
+
+    try:
+
+        number = float(value)
+
+        if math.isfinite(number):
+            return number
+
+    except (
+        TypeError,
+        ValueError
+    ):
+        pass
+
+    return default
+
+
+def safe_bool(value, default=False):
+    """
+    Convert common JSON/string values to bool.
+    """
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+
+        value_lower = value.strip().lower()
+
+        if value_lower in (
+            "true",
+            "1",
+            "yes",
+            "on",
+            "detected",
+            "connected"
+        ):
+            return True
+
+        if value_lower in (
+            "false",
+            "0",
+            "no",
+            "off",
+            "not detected",
+            "disconnected"
+        ):
+            return False
+
+    if isinstance(value, (int, float)):
+
+        return bool(value)
+
+    return default
+
+
+def calculate_magnitude(
+    x,
+    y,
+    z
+):
+    """
+    Calculate acceleration magnitude.
+    """
+
+    return math.sqrt(
+        x * x +
+        y * y +
+        z * z
+    )
+
+
+def calculate_impact_g(
+    x,
+    y,
+    z
+):
+    """
+    Calculate impact G after removing
+    approximately 1g static baseline.
+
+    If acceleration values are already in g,
+    this directly calculates:
+
+        magnitude - 1g
+    """
+
+    magnitude = calculate_magnitude(
+        x,
+        y,
+        z
+    )
+
+    impact = magnitude - 1.0
+
+    if impact < 0:
+        impact = 0.0
+
+    return impact
+
+
+# ============================================================
 # ROOT DASHBOARD
 # ============================================================
 
@@ -89,12 +222,16 @@ def dashboard():
             <head>
                 <title>SOS Dashboard Error</title>
             </head>
+
             <body>
+
                 <h1>Dashboard not found</h1>
+
                 <p>
-                    Please place index.html in the same
-                    folder as app.py.
+                    Please place index.html in the
+                    same folder as app.py.
                 </p>
+
             </body>
             </html>
             """,
@@ -115,7 +252,6 @@ def dashboard():
 def load_events():
 
     if not JSON_FILE.exists():
-
         return []
 
     try:
@@ -128,11 +264,10 @@ def load_events():
 
             data = json.load(file)
 
-            if isinstance(data, list):
+        if isinstance(data, list):
+            return data
 
-                return data
-
-            return []
+        return []
 
     except Exception as error:
 
@@ -150,8 +285,12 @@ def load_events():
 
 def save_events(events):
 
+    temporary_file = JSON_FILE.with_suffix(
+        ".tmp"
+    )
+
     with open(
-        JSON_FILE,
+        temporary_file,
         "w",
         encoding="utf-8"
     ) as file:
@@ -159,8 +298,81 @@ def save_events(events):
         json.dump(
             events,
             file,
-            indent=4
+            indent=4,
+            ensure_ascii=False
         )
+
+    temporary_file.replace(
+        JSON_FILE
+    )
+
+
+# ============================================================
+# LOAD SENSOR DATA
+# ============================================================
+
+def load_sensor_data():
+
+    if not SENSOR_FILE.exists():
+        return []
+
+    try:
+
+        with open(
+            SENSOR_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            data = json.load(file)
+
+        if isinstance(data, list):
+            return data
+
+        return []
+
+    except Exception as error:
+
+        print(
+            "SENSOR JSON LOAD ERROR:",
+            error
+        )
+
+        return []
+
+
+# ============================================================
+# SAVE SENSOR DATA
+# ============================================================
+
+def save_sensor_data(data):
+
+    sensor_data = load_sensor_data()
+
+    sensor_data.append(
+        data
+    )
+
+    temporary_file = SENSOR_FILE.with_suffix(
+        ".tmp"
+    )
+
+    with open(
+        temporary_file,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            sensor_data,
+            file,
+            indent=4,
+            ensure_ascii=False
+        )
+
+    temporary_file.replace(
+        SENSOR_FILE
+    )
 
 
 # ============================================================
@@ -182,26 +394,73 @@ def generate_event_id():
             )
         )
 
-        if event_id.startswith("EVT-"):
+        if event_id.startswith(
+            "EVT-"
+        ):
 
             try:
 
                 number = int(
-                    event_id.replace(
-                        "EVT-",
-                        ""
-                    )
+                    event_id[4:]
                 )
 
-                if number > highest:
-
-                    highest = number
+                highest = max(
+                    highest,
+                    number
+                )
 
             except ValueError:
-
                 pass
 
-    return f"EVT-{highest + 1:06d}"
+    return (
+        f"EVT-{highest + 1:06d}"
+    )
+
+
+# ============================================================
+# EXCEL HEADERS
+# ============================================================
+
+EXCEL_HEADERS = [
+
+    "Event ID",
+    "Vehicle ID",
+    "Driver",
+    "Alert Type",
+
+    "Accel X",
+    "Accel Y",
+    "Accel Z",
+
+    "Impact G",
+
+    "Acceleration Magnitude",
+
+    "Gyro X",
+    "Gyro Y",
+    "Gyro Z",
+
+    "Tilt",
+
+    "GPS Latitude",
+    "GPS Longitude",
+    "GPS Speed km/h",
+    "GPS Fix",
+
+    "Location Source",
+
+    "Sensor Source",
+
+    "WiFi Status",
+    "WhatsApp Status",
+
+    "Event Status",
+
+    "Cancellation Time",
+    "Response Time",
+
+    "Date/Time"
+]
 
 
 # ============================================================
@@ -211,7 +470,6 @@ def generate_event_id():
 def create_excel():
 
     if EXCEL_FILE.exists():
-
         return
 
     workbook = Workbook()
@@ -220,44 +478,9 @@ def create_excel():
 
     sheet.title = "SOS Events"
 
-    headers = [
-
-        "Event ID",
-        "Vehicle ID",
-        "Driver",
-        "Alert Type",
-
-        "Acceleration X",
-        "Acceleration Y",
-        "Acceleration Z",
-        "Acceleration Magnitude",
-
-        "Gyroscope X",
-        "Gyroscope Y",
-        "Gyroscope Z",
-
-        "Tilt",
-
-        "Latitude",
-        "Longitude",
-
-        "GPS Detected",
-        "Location Source",
-
-        "Sensor Source",
-
-        "WiFi Status",
-        "WhatsApp Status",
-
-        "Event Status",
-
-        "Cancellation Time",
-        "Response Time",
-
-        "Date/Time"
-    ]
-
-    sheet.append(headers)
+    sheet.append(
+        EXCEL_HEADERS
+    )
 
     for cell in sheet[1]:
 
@@ -281,22 +504,12 @@ def create_excel():
 
 
 # ============================================================
-# SAVE EVENT TO EXCEL
+# EVENT -> EXCEL ROW
 # ============================================================
 
-def save_event_to_excel(event):
+def event_to_excel_row(event):
 
-    create_excel()
-
-    workbook = load_workbook(
-        EXCEL_FILE
-    )
-
-    sheet = workbook[
-        "SOS Events"
-    ]
-
-    row = [
+    return [
 
         event.get(
             "eventId",
@@ -319,17 +532,31 @@ def save_event_to_excel(event):
         ),
 
         event.get(
-            "accelerationX",
-            0
+            "accel_x",
+            event.get(
+                "accelerationX",
+                0
+            )
         ),
 
         event.get(
-            "accelerationY",
-            0
+            "accel_y",
+            event.get(
+                "accelerationY",
+                0
+            )
         ),
 
         event.get(
-            "accelerationZ",
+            "accel_z",
+            event.get(
+                "accelerationZ",
+                0
+            )
+        ),
+
+        event.get(
+            "impact_g",
             0
         ),
 
@@ -339,18 +566,27 @@ def save_event_to_excel(event):
         ),
 
         event.get(
-            "gyroX",
-            0
+            "gyro_x",
+            event.get(
+                "gyroX",
+                0
+            )
         ),
 
         event.get(
-            "gyroY",
-            0
+            "gyro_y",
+            event.get(
+                "gyroY",
+                0
+            )
         ),
 
         event.get(
-            "gyroZ",
-            0
+            "gyro_z",
+            event.get(
+                "gyroZ",
+                0
+            )
         ),
 
         event.get(
@@ -359,18 +595,32 @@ def save_event_to_excel(event):
         ),
 
         event.get(
-            "latitude",
-            FALLBACK_LATITUDE
+            "gps_lat",
+            event.get(
+                "latitude",
+                FALLBACK_LATITUDE
+            )
         ),
 
         event.get(
-            "longitude",
-            FALLBACK_LONGITUDE
+            "gps_lon",
+            event.get(
+                "longitude",
+                FALLBACK_LONGITUDE
+            )
         ),
 
         event.get(
-            "gpsDetected",
-            False
+            "gps_speed_kmph",
+            0
+        ),
+
+        event.get(
+            "gps_fix",
+            event.get(
+                "gpsDetected",
+                False
+            )
         ),
 
         event.get(
@@ -414,7 +664,28 @@ def save_event_to_excel(event):
         )
     ]
 
-    sheet.append(row)
+
+# ============================================================
+# SAVE EVENT TO EXCEL
+# ============================================================
+
+def save_event_to_excel(event):
+
+    create_excel()
+
+    workbook = load_workbook(
+        EXCEL_FILE
+    )
+
+    sheet = workbook[
+        "SOS Events"
+    ]
+
+    sheet.append(
+        event_to_excel_row(
+            event
+        )
+    )
 
     workbook.save(
         EXCEL_FILE
@@ -441,129 +712,17 @@ def update_event_in_excel(event):
         "eventId"
     )
 
+    found = False
+
     for row in sheet.iter_rows(
         min_row=2
     ):
 
         if row[0].value == event_id:
 
-            values = [
-
-                event.get(
-                    "eventId",
-                    ""
-                ),
-
-                event.get(
-                    "vehicleId",
-                    ""
-                ),
-
-                event.get(
-                    "driver",
-                    ""
-                ),
-
-                event.get(
-                    "alertType",
-                    ""
-                ),
-
-                event.get(
-                    "accelerationX",
-                    0
-                ),
-
-                event.get(
-                    "accelerationY",
-                    0
-                ),
-
-                event.get(
-                    "accelerationZ",
-                    0
-                ),
-
-                event.get(
-                    "accelerationMagnitude",
-                    0
-                ),
-
-                event.get(
-                    "gyroX",
-                    0
-                ),
-
-                event.get(
-                    "gyroY",
-                    0
-                ),
-
-                event.get(
-                    "gyroZ",
-                    0
-                ),
-
-                event.get(
-                    "tilt",
-                    0
-                ),
-
-                event.get(
-                    "latitude",
-                    FALLBACK_LATITUDE
-                ),
-
-                event.get(
-                    "longitude",
-                    FALLBACK_LONGITUDE
-                ),
-
-                event.get(
-                    "gpsDetected",
-                    False
-                ),
-
-                event.get(
-                    "locationSource",
-                    "FALLBACK"
-                ),
-
-                event.get(
-                    "sensorSource",
-                    "UNKNOWN"
-                ),
-
-                event.get(
-                    "wifiStatus",
-                    "UNKNOWN"
-                ),
-
-                event.get(
-                    "whatsappStatus",
-                    "NOT_CONFIGURED"
-                ),
-
-                event.get(
-                    "eventStatus",
-                    "ACTIVE"
-                ),
-
-                event.get(
-                    "cancellationTime",
-                    ""
-                ),
-
-                event.get(
-                    "responseTime",
-                    ""
-                ),
-
-                event.get(
-                    "dateTime",
-                    ""
-                )
-            ]
+            values = event_to_excel_row(
+                event
+            )
 
             for index, value in enumerate(
                 values,
@@ -575,7 +734,17 @@ def update_event_in_excel(event):
                     column=index
                 ).value = value
 
+            found = True
+
             break
+
+    if not found:
+
+        sheet.append(
+            event_to_excel_row(
+                event
+            )
+        )
 
     workbook.save(
         EXCEL_FILE
@@ -591,10 +760,11 @@ def update_event_in_excel(event):
 )
 def health():
 
+    events = load_events()
+
     return {
 
-        "status":
-            "ok",
+        "status": "ok",
 
         "message":
             "Smart Vehicle SOS Server is running",
@@ -605,8 +775,17 @@ def health():
         "excelExists":
             EXCEL_FILE.exists(),
 
+        "jsonExists":
+            JSON_FILE.exists(),
+
+        "sensorFileExists":
+            SENSOR_FILE.exists(),
+
         "totalEvents":
-            len(load_events())
+            len(events),
+
+        "timestamp":
+            now_string()
     }
 
 
@@ -621,6 +800,7 @@ def get_events():
 
     events = load_events()
 
+    # Newest event first.
     events = list(
         reversed(events)
     )
@@ -639,6 +819,251 @@ def get_events():
 
 
 # ============================================================
+# NORMALIZE SENSOR/GPS INPUT
+# ============================================================
+
+def normalize_sensor_data(data):
+
+    # --------------------------------------------------------
+    # ACCELERATION
+    # --------------------------------------------------------
+
+    accel_x = safe_float(
+        data.get(
+            "accel_x",
+            data.get(
+                "accelerationX",
+                0
+            )
+        )
+    )
+
+    accel_y = safe_float(
+        data.get(
+            "accel_y",
+            data.get(
+                "accelerationY",
+                0
+            )
+        )
+    )
+
+    accel_z = safe_float(
+        data.get(
+            "accel_z",
+            data.get(
+                "accelerationZ",
+                0
+            )
+        )
+    )
+
+    # --------------------------------------------------------
+    # ACCELERATION MAGNITUDE
+    # --------------------------------------------------------
+
+    magnitude = calculate_magnitude(
+        accel_x,
+        accel_y,
+        accel_z
+    )
+
+    # --------------------------------------------------------
+    # IMPACT G
+    # --------------------------------------------------------
+
+    if "impact_g" in data:
+
+        impact_g = safe_float(
+            data.get(
+                "impact_g"
+            )
+        )
+
+    else:
+
+        impact_g = calculate_impact_g(
+            accel_x,
+            accel_y,
+            accel_z
+        )
+
+    # --------------------------------------------------------
+    # GYROSCOPE
+    # --------------------------------------------------------
+
+    gyro_x = safe_float(
+        data.get(
+            "gyro_x",
+            data.get(
+                "gyroX",
+                0
+            )
+        )
+    )
+
+    gyro_y = safe_float(
+        data.get(
+            "gyro_y",
+            data.get(
+                "gyroY",
+                0
+            )
+        )
+    )
+
+    gyro_z = safe_float(
+        data.get(
+            "gyro_z",
+            data.get(
+                "gyroZ",
+                0
+            )
+        )
+    )
+
+    # --------------------------------------------------------
+    # GPS
+    # --------------------------------------------------------
+
+    gps_fix = safe_bool(
+        data.get(
+            "gps_fix",
+            data.get(
+                "gpsDetected",
+                False
+            )
+        )
+    )
+
+    gps_lat = safe_float(
+        data.get(
+            "gps_lat",
+            data.get(
+                "latitude",
+                FALLBACK_LATITUDE
+            )
+        ),
+        FALLBACK_LATITUDE
+    )
+
+    gps_lon = safe_float(
+        data.get(
+            "gps_lon",
+            data.get(
+                "longitude",
+                FALLBACK_LONGITUDE
+            )
+        ),
+        FALLBACK_LONGITUDE
+    )
+
+    gps_speed_kmph = safe_float(
+        data.get(
+            "gps_speed_kmph",
+            data.get(
+                "gpsSpeedKmph",
+                data.get(
+                    "gpsSpeed",
+                    0
+                )
+            )
+        )
+    )
+
+    # --------------------------------------------------------
+    # LOCATION SOURCE
+    # --------------------------------------------------------
+
+    if gps_fix:
+
+        location_source = "GPS"
+
+    else:
+
+        gps_lat = FALLBACK_LATITUDE
+        gps_lon = FALLBACK_LONGITUDE
+
+        location_source = "FALLBACK"
+
+    # --------------------------------------------------------
+    # TILT
+    # --------------------------------------------------------
+
+    tilt = safe_float(
+        data.get(
+            "tilt",
+            0
+        )
+    )
+
+    # --------------------------------------------------------
+    # SOURCE
+    # --------------------------------------------------------
+
+    sensor_source = data.get(
+        "sensorSource",
+        "MPU6050"
+    )
+
+    wifi_status = data.get(
+        "wifiStatus",
+        "CONNECTED"
+    )
+
+    return {
+
+        "accel_x":
+            accel_x,
+
+        "accel_y":
+            accel_y,
+
+        "accel_z":
+            accel_z,
+
+        "impact_g":
+            impact_g,
+
+        "accelerationMagnitude":
+            magnitude,
+
+        "gyro_x":
+            gyro_x,
+
+        "gyro_y":
+            gyro_y,
+
+        "gyro_z":
+            gyro_z,
+
+        "tilt":
+            tilt,
+
+        "gps_lat":
+            gps_lat,
+
+        "gps_lon":
+            gps_lon,
+
+        "gps_speed_kmph":
+            gps_speed_kmph,
+
+        "gps_fix":
+            gps_fix,
+
+        "locationSource":
+            location_source,
+
+        "sensorSource":
+            sensor_source,
+
+        "wifiStatus":
+            wifi_status
+    }
+
+
+# ============================================================
 # RECEIVE SOS
 # ============================================================
 
@@ -652,6 +1077,16 @@ async def receive_sos(
     try:
 
         data = await request.json()
+
+        if not isinstance(
+            data,
+            dict
+        ):
+
+            raise HTTPException(
+                status_code=400,
+                detail="SOS data must be a JSON object"
+            )
 
         print()
         print(
@@ -671,60 +1106,76 @@ async def receive_sos(
             data
         )
 
+        # ----------------------------------------------------
+        # SETTINGS
+        # ----------------------------------------------------
 
-        # ====================================================
+        settings = load_settings()
+
+        # ----------------------------------------------------
         # EVENT ID
-        # ====================================================
+        # ----------------------------------------------------
 
         event_id = generate_event_id()
 
+        # ----------------------------------------------------
+        # DATE/TIME
+        # ----------------------------------------------------
 
-        # ====================================================
-        # DATE / TIME
-        # ====================================================
+        date_time = now_string()
 
-        date_time = datetime.now().strftime(
-            "%Y-%m-%d %H:%M:%S"
+        # ----------------------------------------------------
+        # NORMALIZE SENSOR/GPS
+        # ----------------------------------------------------
+
+        sensor = normalize_sensor_data(
+            data
         )
 
+        # ----------------------------------------------------
+        # VEHICLE
+        # ----------------------------------------------------
 
-        # ====================================================
-        # GPS
-        # ====================================================
+        vehicle_id = data.get(
+            "vehicleId",
+            settings.get(
+                "vehicleId",
+                "VEHICLE-001"
+            )
+        )
 
-        gps_detected = bool(
+        driver = data.get(
+            "driver",
+            settings.get(
+                "driver",
+                "Driver-01"
+            )
+        )
+
+        # ----------------------------------------------------
+        # ALERT TYPE
+        # ----------------------------------------------------
+
+        alert_type = data.get(
+            "alertType",
             data.get(
-                "gpsDetected",
-                False
+                "event",
+                "MANUAL_SOS"
             )
         )
 
-        if gps_detected:
+        # ----------------------------------------------------
+        # WHATSAPP STATUS
+        # ----------------------------------------------------
 
-            latitude = data.get(
-                "latitude",
-                FALLBACK_LATITUDE
-            )
+        whatsapp_status = data.get(
+            "whatsappStatus",
+            "PENDING"
+        )
 
-            longitude = data.get(
-                "longitude",
-                FALLBACK_LONGITUDE
-            )
-
-            location_source = "GPS"
-
-        else:
-
-            latitude = FALLBACK_LATITUDE
-
-            longitude = FALLBACK_LONGITUDE
-
-            location_source = "FALLBACK"
-
-
-        # ====================================================
+        # ----------------------------------------------------
         # CREATE EVENT
-        # ====================================================
+        # ----------------------------------------------------
 
         event = {
 
@@ -732,103 +1183,96 @@ async def receive_sos(
                 event_id,
 
             "vehicleId":
-                data.get(
-                    "vehicleId",
-                    "VEHICLE-001"
-                ),
+                str(vehicle_id),
 
             "driver":
-                data.get(
-                    "driver",
-                    "UNKNOWN"
-                ),
+                str(driver),
 
             "alertType":
-                data.get(
-                    "alertType",
-                    data.get(
-                        "event",
-                        "MANUAL_SOS"
-                    )
-                ),
+                str(alert_type),
 
+            # New exact sensor fields
+            "accel_x":
+                sensor["accel_x"],
+
+            "accel_y":
+                sensor["accel_y"],
+
+            "accel_z":
+                sensor["accel_z"],
+
+            "gyro_x":
+                sensor["gyro_x"],
+
+            "gyro_y":
+                sensor["gyro_y"],
+
+            "gyro_z":
+                sensor["gyro_z"],
+
+            "impact_g":
+                sensor["impact_g"],
+
+            "gps_lat":
+                sensor["gps_lat"],
+
+            "gps_lon":
+                sensor["gps_lon"],
+
+            "gps_speed_kmph":
+                sensor["gps_speed_kmph"],
+
+            "gps_fix":
+                sensor["gps_fix"],
+
+            # Dashboard compatibility fields
             "accelerationX":
-                data.get(
-                    "accelerationX",
-                    0
-                ),
+                sensor["accel_x"],
 
             "accelerationY":
-                data.get(
-                    "accelerationY",
-                    0
-                ),
+                sensor["accel_y"],
 
             "accelerationZ":
-                data.get(
-                    "accelerationZ",
-                    0
-                ),
+                sensor["accel_z"],
 
             "accelerationMagnitude":
-                data.get(
-                    "accelerationMagnitude",
-                    0
-                ),
+                sensor["accelerationMagnitude"],
 
             "gyroX":
-                data.get(
-                    "gyroX",
-                    0
-                ),
+                sensor["gyro_x"],
 
             "gyroY":
-                data.get(
-                    "gyroY",
-                    0
-                ),
+                sensor["gyro_y"],
 
             "gyroZ":
-                data.get(
-                    "gyroZ",
-                    0
-                ),
+                sensor["gyro_z"],
 
             "tilt":
-                data.get(
-                    "tilt",
-                    0
-                ),
+                sensor["tilt"],
 
             "latitude":
-                latitude,
+                sensor["gps_lat"],
 
             "longitude":
-                longitude,
+                sensor["gps_lon"],
+
+            "gpsSpeedKmph":
+                sensor["gps_speed_kmph"],
 
             "gpsDetected":
-                gps_detected,
+                sensor["gps_fix"],
 
             "locationSource":
-                location_source,
+                sensor["locationSource"],
 
             "sensorSource":
-                data.get(
-                    "sensorSource",
-                    "UNKNOWN"
-                ),
+                sensor["sensorSource"],
 
             "wifiStatus":
-                data.get(
-                    "wifiStatus",
-                    "CONNECTED"
-                ),
+                sensor["wifiStatus"],
 
             "whatsappStatus":
-                data.get(
-                    "whatsappStatus",
-                    "PENDING"
-                ),
+                whatsapp_status,
 
             "eventStatus":
                 "ACTIVE",
@@ -843,10 +1287,9 @@ async def receive_sos(
                 date_time
         }
 
-
-        # ====================================================
+        # ----------------------------------------------------
         # SAVE JSON
-        # ====================================================
+        # ----------------------------------------------------
 
         events = load_events()
 
@@ -858,19 +1301,17 @@ async def receive_sos(
             events
         )
 
-
-        # ====================================================
+        # ----------------------------------------------------
         # SAVE EXCEL
-        # ====================================================
+        # ----------------------------------------------------
 
         save_event_to_excel(
             event
         )
 
-
-        # ====================================================
+        # ----------------------------------------------------
         # CONSOLE
-        # ====================================================
+        # ----------------------------------------------------
 
         print(
             "EVENT SAVED:",
@@ -878,9 +1319,29 @@ async def receive_sos(
         )
 
         print(
+            "VEHICLE:",
+            vehicle_id
+        )
+
+        print(
+            "ALERT:",
+            alert_type
+        )
+
+        print(
+            "IMPACT G:",
+            sensor["impact_g"]
+        )
+
+        print(
+            "GPS FIX:",
+            sensor["gps_fix"]
+        )
+
+        print(
             "LOCATION:",
-            latitude,
-            longitude
+            sensor["gps_lat"],
+            sensor["gps_lon"]
         )
 
         print(
@@ -892,10 +1353,9 @@ async def receive_sos(
             "=========================================="
         )
 
-
-        # ====================================================
+        # ----------------------------------------------------
         # RESPONSE
-        # ====================================================
+        # ----------------------------------------------------
 
         return {
 
@@ -909,6 +1369,8 @@ async def receive_sos(
                 event
         }
 
+    except HTTPException:
+        raise
 
     except Exception as error:
 
@@ -917,14 +1379,10 @@ async def receive_sos(
             error
         )
 
-        return {
-
-            "status":
-                "error",
-
-            "message":
-                str(error)
-        }
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
 
 
 # ============================================================
@@ -942,51 +1400,71 @@ async def receive_sensor(
 
         data = await request.json()
 
-        existing = []
+        if not isinstance(
+            data,
+            dict
+        ):
 
-        if SENSOR_FILE.exists():
+            raise HTTPException(
+                status_code=400,
+                detail="Sensor data must be a JSON object"
+            )
 
-            try:
+        # ----------------------------------------------------
+        # Normalize data
+        # ----------------------------------------------------
 
-                with open(
-                    SENSOR_FILE,
-                    "r",
-                    encoding="utf-8"
-                ) as file:
-
-                    existing = json.load(
-                        file
-                    )
-
-                    if not isinstance(
-                        existing,
-                        list
-                    ):
-
-                        existing = []
-
-            except Exception:
-
-                existing = []
-
-
-        existing.append(
+        normalized = normalize_sensor_data(
             data
         )
 
+        # ----------------------------------------------------
+        # Preserve extra device fields
+        # ----------------------------------------------------
 
-        with open(
-            SENSOR_FILE,
-            "w",
-            encoding="utf-8"
-        ) as file:
+        sensor_record = {
 
-            json.dump(
-                existing,
-                file,
-                indent=4
-            )
+            "timestamp":
+                now_string(),
 
+            **normalized
+        }
+
+        # ----------------------------------------------------
+        # Optional device information
+        # ----------------------------------------------------
+
+        if "vehicleId" in data:
+
+            sensor_record[
+                "vehicleId"
+            ] = data[
+                "vehicleId"
+            ]
+
+        if "deviceId" in data:
+
+            sensor_record[
+                "deviceId"
+            ] = data[
+                "deviceId"
+            ]
+
+        if "uptime" in data:
+
+            sensor_record[
+                "uptime"
+            ] = data[
+                "uptime"
+            ]
+
+        # ----------------------------------------------------
+        # SAVE
+        # ----------------------------------------------------
+
+        save_sensor_data(
+            sensor_record
+        )
 
         return {
 
@@ -997,20 +1475,23 @@ async def receive_sensor(
                 "Sensor data received",
 
             "data":
-                data
+                sensor_record
         }
 
+    except HTTPException:
+        raise
 
     except Exception as error:
 
-        return {
+        print(
+            "SENSOR ERROR:",
+            error
+        )
 
-            "status":
-                "error",
-
-            "message":
-                str(error)
-        }
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
 
 
 # ============================================================
@@ -1022,27 +1503,49 @@ async def receive_sensor(
 )
 def get_sensor():
 
-    if not SENSOR_FILE.exists():
+    return {
 
-        return []
+        "status":
+            "success",
 
+        "count":
+            len(load_sensor_data()),
 
-    try:
-
-        with open(
-            SENSOR_FILE,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            return json.load(
-                file
-            )
+        "data":
+            load_sensor_data()
+    }
 
 
-    except Exception:
+# ============================================================
+# GET LATEST SENSOR DATA
+# ============================================================
 
-        return []
+@app.get(
+    "/api/sensor/latest"
+)
+def get_latest_sensor():
+
+    sensor_data = load_sensor_data()
+
+    if not sensor_data:
+
+        return {
+
+            "status":
+                "success",
+
+            "data":
+                None
+        }
+
+    return {
+
+        "status":
+            "success",
+
+        "data":
+            sensor_data[-1]
+    }
 
 
 # ============================================================
@@ -1073,15 +1576,10 @@ def get_single_event(
                     event
             }
 
-
-    return {
-
-        "status":
-            "error",
-
-        "message":
-            "Event not found"
-    }
+    raise HTTPException(
+        status_code=404,
+        detail="Event not found"
+    )
 
 
 # ============================================================
@@ -1103,35 +1601,46 @@ def cancel_event(
             "eventId"
         ) == event_id:
 
+            if event.get(
+                "eventStatus"
+            ) == "CANCELLED":
+
+                return {
+
+                    "status":
+                        "success",
+
+                    "message":
+                        "SOS is already cancelled",
+
+                    "event":
+                        event
+                }
 
             event[
                 "eventStatus"
             ] = "CANCELLED"
 
-
             event[
                 "cancellationTime"
-            ] = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
+            ] = now_string()
 
             event[
                 "responseTime"
-            ] = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
+            ] = now_string()
 
             save_events(
                 events
             )
 
-
             update_event_in_excel(
                 event
             )
 
+            print(
+                "EVENT CANCELLED:",
+                event_id
+            )
 
             return {
 
@@ -1145,15 +1654,10 @@ def cancel_event(
                     event
             }
 
-
-    return {
-
-        "status":
-            "error",
-
-        "message":
-            "Event not found"
-    }
+    raise HTTPException(
+        status_code=404,
+        detail="Event not found"
+    )
 
 
 # ============================================================
@@ -1175,28 +1679,42 @@ def resolve_event(
             "eventId"
         ) == event_id:
 
+            if event.get(
+                "eventStatus"
+            ) == "RESOLVED":
+
+                return {
+
+                    "status":
+                        "success",
+
+                    "message":
+                        "SOS is already resolved",
+
+                    "event":
+                        event
+                }
 
             event[
                 "eventStatus"
             ] = "RESOLVED"
 
-
             event[
                 "responseTime"
-            ] = datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
+            ] = now_string()
 
             save_events(
                 events
             )
 
-
             update_event_in_excel(
                 event
             )
 
+            print(
+                "EVENT RESOLVED:",
+                event_id
+            )
 
             return {
 
@@ -1210,15 +1728,10 @@ def resolve_event(
                     event
             }
 
-
-    return {
-
-        "status":
-            "error",
-
-        "message":
-            "Event not found"
-    }
+    raise HTTPException(
+        status_code=404,
+        detail="Event not found"
+    )
 
 
 # ============================================================
@@ -1229,18 +1742,7 @@ def load_settings():
 
     if not SETTINGS_FILE.exists():
 
-        return {
-
-            "vehicleId":
-                "VEHICLE-001",
-
-            "driver":
-                "Driver-01",
-
-            "whatsappPhone":
-                ""
-        }
-
+        return DEFAULT_SETTINGS.copy()
 
     try:
 
@@ -1250,25 +1752,38 @@ def load_settings():
             encoding="utf-8"
         ) as file:
 
-            return json.load(
+            data = json.load(
                 file
             )
 
+        if not isinstance(
+            data,
+            dict
+        ):
 
-    except Exception:
+            return DEFAULT_SETTINGS.copy()
 
-        return {
+        settings = DEFAULT_SETTINGS.copy()
 
-            "vehicleId":
-                "VEHICLE-001",
+        settings.update(
+            data
+        )
 
-            "driver":
-                "Driver-01",
+        return settings
 
-            "whatsappPhone":
-                ""
-        }
+    except Exception as error:
 
+        print(
+            "SETTINGS LOAD ERROR:",
+            error
+        )
+
+        return DEFAULT_SETTINGS.copy()
+
+
+# ============================================================
+# SAVE SETTINGS
+# ============================================================
 
 def save_settings(
     settings
@@ -1283,7 +1798,8 @@ def save_settings(
         json.dump(
             settings,
             file,
-            indent=4
+            indent=4,
+            ensure_ascii=False
         )
 
 
@@ -1310,26 +1826,62 @@ async def update_settings(
     request: Request
 ):
 
-    data = await request.json()
+    try:
 
-    settings = load_settings()
+        data = await request.json()
 
-    settings.update(
-        data
-    )
+        if not isinstance(
+            data,
+            dict
+        ):
 
-    save_settings(
-        settings
-    )
+            raise HTTPException(
+                status_code=400,
+                detail="Settings must be a JSON object"
+            )
 
-    return {
+        settings = load_settings()
 
-        "status":
-            "success",
+        allowed_fields = {
 
-        "settings":
+            "vehicleId",
+            "driver",
+            "whatsappPhone"
+        }
+
+        for key, value in data.items():
+
+            if key in allowed_fields:
+
+                settings[key] = str(
+                    value
+                ).strip()
+
+        save_settings(
             settings
-    }
+        )
+
+        return {
+
+            "status":
+                "success",
+
+            "message":
+                "Settings updated",
+
+            "settings":
+                settings
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
 
 
 # ============================================================
@@ -1347,11 +1899,12 @@ def whatsapp_event(
 
     settings = load_settings()
 
-    phone = settings.get(
-        "whatsappPhone",
-        ""
-    )
-
+    phone = str(
+        settings.get(
+            "whatsappPhone",
+            ""
+        )
+    ).strip()
 
     for event in events:
 
@@ -1359,8 +1912,24 @@ def whatsapp_event(
             "eventId"
         ) == event_id:
 
+            latitude = event.get(
+                "gps_lat",
+                event.get(
+                    "latitude",
+                    FALLBACK_LATITUDE
+                )
+            )
+
+            longitude = event.get(
+                "gps_lon",
+                event.get(
+                    "longitude",
+                    FALLBACK_LONGITUDE
+                )
+            )
 
             message = (
+
                 "SMART VEHICLE SOS ALERT\n\n"
 
                 f"Event ID: "
@@ -1378,14 +1947,22 @@ def whatsapp_event(
                 f"Status: "
                 f"{event.get('eventStatus')}\n\n"
 
+                f"Impact G: "
+                f"{event.get('impact_g', 0)}\n"
+
+                f"GPS Fix: "
+                f"{event.get('gps_fix', False)}\n"
+
                 f"Location: "
-                f"{event.get('latitude')}, "
-                f"{event.get('longitude')}\n"
+                f"{latitude}, "
+                f"{longitude}\n"
+
+                f"GPS Speed: "
+                f"{event.get('gps_speed_kmph', 0)} km/h\n"
 
                 f"Time: "
                 f"{event.get('dateTime')}"
             )
-
 
             encoded_message = (
                 urllib.parse.quote(
@@ -1393,43 +1970,42 @@ def whatsapp_event(
                 )
             )
 
-
             if phone:
 
                 url = (
-                    f"https://wa.me/"
+                    "https://wa.me/"
                     f"{phone}"
-                    f"?text="
+                    "?text="
                     f"{encoded_message}"
                 )
 
             else:
 
                 url = (
-                    f"https://wa.me/"
-                    f"?text="
+                    "https://wa.me/"
+                    "?text="
                     f"{encoded_message}"
                 )
-
 
             return {
 
                 "status":
                     "success",
 
+                "eventId":
+                    event_id,
+
+                "phoneConfigured":
+                    bool(phone),
+
                 "url":
                     url
             }
 
-
-    return {
-
-        "status":
-            "error",
-
-        "message":
-            "Event not found"
-    }
+    raise HTTPException(
+        status_code=404,
+        detail="Event not found"
+    )
 
 
 # ============================================================
@@ -1459,6 +2035,34 @@ def export_excel():
 
 
 # ============================================================
+# DELETE ALL EVENTS
+# ============================================================
+
+@app.delete(
+    "/api/events"
+)
+def delete_all_events():
+
+    save_events([])
+
+    # Recreate Excel file.
+    if EXCEL_FILE.exists():
+
+        EXCEL_FILE.unlink()
+
+    create_excel()
+
+    return {
+
+        "status":
+            "success",
+
+        "message":
+            "All SOS events deleted"
+    }
+
+
+# ============================================================
 # STARTUP
 # ============================================================
 
@@ -1469,11 +2073,29 @@ def startup():
 
     create_excel()
 
-
     if not JSON_FILE.exists():
 
         save_events([])
 
+    if not SENSOR_FILE.exists():
+
+        with open(
+            SENSOR_FILE,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                [],
+                file,
+                indent=4
+            )
+
+    if not SETTINGS_FILE.exists():
+
+        save_settings(
+            DEFAULT_SETTINGS.copy()
+        )
 
     print()
     print(
@@ -1509,10 +2131,36 @@ def startup():
     )
 
     print(
+        "Sensor    : "
+        "http://127.0.0.1:8001/api/sensor"
+    )
+
+    print(
+        "Settings  : "
+        "http://127.0.0.1:8001/api/settings"
+    )
+
+    print(
         "Excel     : "
         "http://127.0.0.1:8001/api/export/excel"
     )
 
     print(
         "=========================================="
+    )
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+if __name__ == "__main__":
+
+    import uvicorn
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8001,
+        reload=False
     )
